@@ -1,4 +1,5 @@
-> **Customize this file**: Tailor this template to your project by noting specific contribution types you're looking for, adding a Code of Conduct, or adjusting the writing guidelines to match your style.
+> **Customize this file**: Tailor this template to your project by noting specific contribution types you're looking
+> for, adding a Code of Conduct, or adjusting the writing guidelines to match your style.
 
 # Contribute to the documentation
 
