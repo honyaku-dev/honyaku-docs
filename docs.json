@@ -15,9 +15,7 @@
         "groups": [
           {
             "group": "GitHub Action Integration",
-            "pages": [
-              "index"
-            ]
+            "pages": ["gh-action/getting-started"]
           }
         ]
       }
@@ -35,8 +33,7 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "navbar": {
-  },
+  "navbar": {},
   "contextual": {
     "options": [
       "copy",
