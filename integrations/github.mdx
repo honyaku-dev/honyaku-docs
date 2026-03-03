@@ -1,0 +1,94 @@
+---
+title: "GitHub Actions"
+description: "Automatically translate files in your repository using GitHub Actions"
+---
+
+The honyaku.dev GitHub Action translates your source file into multiple target languages and commits the results back to your repository.
+
+## Setup
+
+<Steps>
+  <Step title="Get an API key">
+
+    Generate an API key from the [settings page](https://honyaku.dev/settings).
+
+  </Step>
+
+  <Step title="Add the API key to your repository">
+
+    Go to your repository's **Settings > Secrets and variables > Actions** and create a new secret named `HONYAKU_API_KEY` with your API key.
+
+  </Step>
+
+  <Step title="Create a workflow file">
+
+    Create `.github/workflows/translate.yml` in your repository:
+
+    ```yaml
+    name: Translate
+
+    on:
+      push:
+        branches: [main]
+        paths:
+          - "en_US.json"
+
+    permissions:
+      contents: write
+
+    jobs:
+      translate:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+
+          - uses: toshimichi/honyaku-action@v0
+            with:
+              source-file: "en_US.json"
+              output-dir: "lang"
+              targets: "ja:ja_JP.json, zh:zh_CN.json, ko:ko_KR.json"
+              api-key: ${{ secrets.HONYAKU_API_KEY }}
+    ```
+
+  </Step>
+</Steps>
+
+## Inputs
+
+| Name            | Required | Default                      | Description                                                            |
+| --------------- | -------- | ---------------------------- | ---------------------------------------------------------------------- |
+| `source-file`   | Yes      |                              | Path to the source translation file                                    |
+| `output-dir`    | Yes      |                              | Output directory for translated files                                  |
+| `targets`       | Yes      |                              | Comma-separated list of target locales in `<locale>:<filename>` format |
+| `api-key`       | Yes      |                              | API key for authentication                                             |
+| `translator-id` | No       | `gpt_4_1_mini`               | Translator model ID                                                    |
+| `custom-prompt` | No       | `""`                         | Custom prompt for the translator                                       |
+| `base-url`      | No       | `https://honyaku.dev/api/v1` | Base URL of the Honyaku API                                            |
+
+## Custom Prompts
+
+You can use the `custom-prompt` input to give the translator additional context about your project:
+
+```yaml
+- uses: toshimichi/honyaku-action@v0
+  with:
+    source-file: "en_US.json"
+    output-dir: "lang"
+    targets: "ja:ja_JP.json, zh:zh_CN.json, ko:ko_KR.json"
+    api-key: ${{ secrets.HONYAKU_API_KEY }}
+    custom-prompt: "Translate for a casual mobile game UI"
+```
+
+## Lock File
+
+The action creates a `honyaku-lock.json` file in your repository root to track the state of translations. Commit this file to your repository. It prevents redundant API calls by skipping translations when the source file hasn't changed.
+
+## How It Works
+
+1. Computes the SHA-256 hash of the source file and compares it against `honyaku-lock.json`. If unchanged, the action exits early.
+2. Uploads the source file to the Honyaku API.
+3. Decompiles the file to extract translatable strings.
+4. Queues translation jobs for each target locale.
+5. Polls for job completion.
+6. Downloads the translated files and extracts them to the output directory.
+7. Updates `honyaku-lock.json` and commits/pushes the changes.

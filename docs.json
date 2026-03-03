@@ -14,8 +14,12 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "GitHub Action Integration",
-            "pages": ["gh-action/getting-started"]
+            "group": "Getting Started",
+            "pages": ["index", "pricing"]
+          },
+          {
+            "group": "Integrations",
+            "pages": ["integrations/index", "integrations/github"]
           }
         ]
       }
