@@ -9,12 +9,14 @@ We support any i18n libraries. However, to help AI understand the context and ge
 we recommend having "description" fields in your translation files to provide more context for each translation key.
 
 ### Pattern 1
-```
+
+Schema:
+```ts
 Record<string, { text: string; description: string }>
 ```
 
 Example:
-```
+```json
 {
   "save": {
     "text": "Save",
@@ -39,12 +41,14 @@ function loadLocale(messages: Record<string, { text: string }>): Record<string, 
 ```
 
 ### Pattern 2
-```
+
+Schema:
+```ts
 { key: string; text: string; description: string }[]
 ```
 
 Example:
-```
+```json
 [
   {
     "key": "save",
