@@ -1,0 +1,71 @@
+---
+title: "Updating translations"
+description: "Learn how to update translations manually or automatically"
+---
+
+## File structure
+
+We support any i18n libraries. However, to help AI understand the context and generate better translations,
+we recommend having "description" fields in your translation files to provide more context for each translation key.
+
+### Pattern 1
+```
+Record<string, { text: string; description: string }>
+```
+
+Example:
+```
+{
+  "save": {
+    "text": "Save",
+    "description": "A button label that allows users to save their changes or progress."
+  }
+  "cancel": {
+      "text": "Cancel",
+      "description": "A button label that allows users to abort an action or close a dialog without making changes."
+  },
+}
+```
+
+You can convert this format to a simpler format that your i18n library uses:
+```ts
+import en from "@/i18n/en.json"
+
+const enMessages = loadLocale(en)
+
+function loadLocale(messages: Record<string, { text: string }>): Record<string, string> {
+  return Object.fromEntries(Object.entries(messages).map(([key, value]) => [key, value.text]))
+}
+```
+
+### Pattern 2
+```
+{ key: string; text: string; description: string }[]
+```
+
+Example:
+```
+[
+  {
+    "key": "save",
+    "text": "Save",
+    "description": "A button label that allows users to save their changes or progress."
+  },
+  {
+    "key": "cancel",
+    "text": "Cancel",
+    "description": "A button label that allows users to abort an action or close a dialog without making changes."
+  },
+]
+```
+
+You can convert this format to a simpler format that your i18n library uses:
+```ts
+import en from "@/i18n/en.json"
+
+const enMessages = loadLocale(en)
+
+function loadLocale(messages: { key: string; text: string }[]): Record<string, string> {
+  return Object.fromEntries(messages.map(({ key, text }) => [key, text]))
+}
+```
