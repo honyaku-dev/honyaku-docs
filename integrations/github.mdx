@@ -42,7 +42,7 @@ The honyaku.dev GitHub Action translates your source file into multiple target l
         steps:
           - uses: actions/checkout@v4
 
-          - uses: toshimichi/honyaku-action@v0
+          - uses: honyaku-dev/honyaku-action@v0
             with:
               source-file: "en_US.json"
               output-dir: "lang"
@@ -70,7 +70,7 @@ The honyaku.dev GitHub Action translates your source file into multiple target l
 You can use the `custom-prompt` input to give the translator additional context about your project:
 
 ```yaml
-- uses: toshimichi/honyaku-action@v0
+- uses: honyaku-dev/honyaku-action@v0
   with:
     source-file: "en_US.json"
     output-dir: "lang"
