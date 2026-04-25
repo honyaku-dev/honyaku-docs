@@ -1,0 +1,181 @@
+---
+title: "Example Project"
+description: "See an example project and learn how to use honyaku.dev in a real project"
+---
+
+Check out our example project at https://honyaku-example.vercel.app
+
+This example project is a multilingual recipe discovery app called **World Kitchen**, built with [Next.js](https://nextjs.org/) and [next-intl](https://next-intl.dev/). It uses honyaku.dev to automatically translate the app into 100+ languages via a GitHub Actions workflow.
+
+You can find the full source code on [GitHub](https://github.com/honyaku-dev/honyaku-example).
+
+## Project Structure
+
+```
+honyaku-example/
+├── .github/workflows/
+│   └── translate.yml          # GitHub Actions workflow for auto-translation
+├── app/
+│   └── [locale]/
+│       ├── layout.tsx         # Root layout with locale support
+│       └── page.tsx           # Home page
+├── components/
+│   ├── Header.tsx             # Header with locale switcher
+│   ├── LocaleSwitcher.tsx     # Language selector dropdown
+│   └── RecipeCard.tsx         # Recipe display card
+├── i18n/
+│   ├── navigation.ts          # Locale-aware navigation utilities
+│   ├── request.ts             # Server-side i18n config
+│   └── routing.ts             # Locale routing definition
+├── lib/
+│   ├── honyaku.ts             # Honyaku message format converter
+│   └── recipes.ts             # Recipe data
+├── messages/
+│   ├── en.json                # English source translations
+│   └── generated/
+│       └── *.json             # Auto-generated translations (100+ languages)
+├── locale.json                # Language metadata (id, name, endonym)
+├── next.config.ts             # Next.js config with next-intl plugin
+└── proxy.ts                   # next-intl middleware
+```
+
+## Translation Source File
+
+The source translation file uses the honyaku.dev format with `text` and `description` fields. The `description` provides context for the AI translator to produce more accurate translations.
+
+```json messages/en.json
+{
+  "Header": {
+    "title": {
+      "text": "World Kitchen",
+      "description": "App name shown in the header. A recipe discovery app for world cuisines."
+    },
+    "subtitle": {
+      "text": "Discover recipes from around the world",
+      "description": "Tagline shown below the app name in the header."
+    }
+  },
+  "HomePage": {
+    "heroTitle": {
+      "text": "Explore Global Flavors",
+      "description": "Main heading on the home page hero section."
+    },
+    ...
+  },
+  "RecipeCard": {
+    "cookingTime": {
+      "text": "{minutes} min",
+      "description": "Cooking time label on a recipe card. {minutes} is replaced with the number of minutes."
+    },
+    ...
+  },
+  ...
+}
+```
+
+## Honyaku Message Converter
+
+Since next-intl expects simple `string` values, we need to convert the honyaku.dev format (with `text` and `description` fields) into plain strings. This utility recursively walks the message tree and extracts the `text` from each leaf node.
+
+```ts lib/honyaku.ts
+type HonyakuLeaf = { text: string; description?: string };
+type HonyakuMessages = { [key: string]: HonyakuLeaf | HonyakuMessages };
+type SimpleMessages = { [key: string]: string | SimpleMessages };
+
+function isHonyakuLeaf(value: unknown): value is HonyakuLeaf {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "text" in value &&
+    typeof (value as HonyakuLeaf).text === "string"
+  );
+}
+
+export function convertHonyakuMessages(messages: HonyakuMessages): SimpleMessages {
+  const result: SimpleMessages = {};
+
+  for (const [key, value] of Object.entries(messages)) {
+    if (isHonyakuLeaf(value)) {
+      result[key] = value.text;
+    } else if (typeof value === "object" && value !== null) {
+      result[key] = convertHonyakuMessages(value as HonyakuMessages);
+    } else {
+      result[key] = value as string;
+    }
+  }
+
+  return result;
+}
+```
+
+## i18n Setup
+
+### Routing
+
+Defines the supported locales from `locale.json` (which contains metadata for 100+ languages) and sets English as the default.
+
+```ts i18n/routing.ts
+import { defineRouting } from "next-intl/routing";
+import locales from "@/locale.json";
+
+export const routing = defineRouting({
+  locales: Object.keys(locales) as [string, ...string[]],
+  defaultLocale: "en",
+});
+```
+
+### Request Configuration
+
+Loads the appropriate translation file for each request. English is loaded from the source file, while other languages are loaded from the `messages/generated/` directory. The raw honyaku.dev format is then converted to simple messages.
+
+```ts i18n/request.ts
+import { getRequestConfig } from "next-intl/server";
+import { hasLocale } from "next-intl";
+import { routing } from "./routing";
+import { convertHonyakuMessages } from "@/lib/honyaku";
+
+export default getRequestConfig(async ({ requestLocale }) => {
+  const requested = await requestLocale;
+  const locale = hasLocale(routing.locales, requested)
+    ? requested
+    : routing.defaultLocale;
+
+  const raw =
+    locale === routing.defaultLocale
+      ? (await import(`../messages/${locale}.json`)).default
+      : (await import(`../messages/generated/${locale}.json`)).default;
+  const messages = convertHonyakuMessages(raw);
+
+  return { locale, messages };
+});
+```
+
+## GitHub Actions Workflow
+
+This workflow automatically translates the source file into all supported languages whenever `messages/en.json` is updated on the `main` branch. The `targets: "all:{id}.json"` pattern generates a separate file for each language.
+
+```yaml .github/workflows/translate.yml
+name: Translate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "messages/en.json"
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: honyaku-dev/honyaku-action@v0
+        with:
+          source-file: "messages/en.json"
+          output-dir: "messages/generated"
+          targets: "all:{id}.json"
+          api-key: ${{ secrets.HONYAKU_API_KEY }}
+```

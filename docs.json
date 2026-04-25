@@ -15,7 +15,7 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["index", "updating-translations", "pricing"]
+            "pages": ["index", "updating-translations", "example-project", "pricing"]
           },
           {
             "group": "Integrations",
