@@ -45,29 +45,21 @@ The source translation file uses the honyaku.dev format with `text` and `descrip
 
 ```json messages/en.json
 {
-  "Header": {
-    "title": {
-      "text": "World Kitchen",
-      "description": "App name shown in the header. A recipe discovery app for world cuisines."
-    },
-    "subtitle": {
-      "text": "Discover recipes from around the world",
-      "description": "Tagline shown below the app name in the header."
-    }
+  "header_title": {
+    "text": "World Kitchen",
+    "description": "App name shown in the header. A recipe discovery app for world cuisines."
   },
-  "HomePage": {
-    "heroTitle": {
-      "text": "Explore Global Flavors",
-      "description": "Main heading on the home page hero section."
-    },
-    ...
+  "header_subtitle": {
+    "text": "Discover recipes from around the world",
+    "description": "Tagline shown below the app name in the header."
   },
-  "RecipeCard": {
-    "cookingTime": {
-      "text": "{minutes} min",
-      "description": "Cooking time label on a recipe card. {minutes} is replaced with the number of minutes."
-    },
-    ...
+  "home_page_hero_title": {
+    "text": "Explore Global Flavors",
+    "description": "Main heading on the home page hero section."
+  },
+  "recipe_card_cooking_time": {
+    "text": "{minutes} min",
+    "description": "Cooking time label on a recipe card. {minutes} is replaced with the number of minutes."
   },
   ...
 }
@@ -75,36 +67,21 @@ The source translation file uses the honyaku.dev format with `text` and `descrip
 
 ## Honyaku Message Converter
 
-Since next-intl expects simple `string` values, we need to convert the honyaku.dev format (with `text` and `description` fields) into plain strings. This utility recursively walks the message tree and extracts the `text` from each leaf node.
+Since next-intl expects simple `string` values, we need to convert the honyaku.dev format (with `text` and `description` fields) into plain strings. `loadMessages` extracts the `text` from each entry, and `loadLocale` handles loading the right file for each locale.
 
 ```ts lib/honyaku.ts
-type HonyakuLeaf = { text: string; description?: string };
-type HonyakuMessages = { [key: string]: HonyakuLeaf | HonyakuMessages };
-type SimpleMessages = { [key: string]: string | SimpleMessages };
+import enMessages from "@/messages/en.json"
 
-function isHonyakuLeaf(value: unknown): value is HonyakuLeaf {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "text" in value &&
-    typeof (value as HonyakuLeaf).text === "string"
-  );
+export function loadMessages(messages: Record<string, { text: string }>): Record<string, string> {
+  return Object.fromEntries(Object.entries(messages).map(([key, value]) => [key, value.text]))
 }
 
-export function convertHonyakuMessages(messages: HonyakuMessages): SimpleMessages {
-  const result: SimpleMessages = {};
-
-  for (const [key, value] of Object.entries(messages)) {
-    if (isHonyakuLeaf(value)) {
-      result[key] = value.text;
-    } else if (typeof value === "object" && value !== null) {
-      result[key] = convertHonyakuMessages(value as HonyakuMessages);
-    } else {
-      result[key] = value as string;
-    }
+export async function loadLocale(locale: string) {
+  if (locale === "en") {
+    return enMessages
+  } else {
+    return loadMessages((await import(`../messages/${locale}.json`)).default)
   }
-
-  return result;
 }
 ```
 
@@ -126,13 +103,16 @@ export const routing = defineRouting({
 
 ### Request Configuration
 
-Loads the appropriate translation file for each request. English is loaded from the source file, while other languages are loaded from the `messages/generated/` directory. The raw honyaku.dev format is then converted to simple messages.
+Loads the appropriate translation file for each request. English messages are always spread as a fallback, so any missing translations in other languages will gracefully fall back to English.
 
 ```ts i18n/request.ts
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { routing } from "./routing";
-import { convertHonyakuMessages } from "@/lib/honyaku";
+import { loadLocale, loadMessages } from "@/lib/honyaku";
+import en from "@/messages/en.json"
+
+const enMessages = loadMessages(en);
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
@@ -140,13 +120,14 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ? requested
     : routing.defaultLocale;
 
-  const raw =
-    locale === routing.defaultLocale
-      ? (await import(`../messages/${locale}.json`)).default
-      : (await import(`../messages/generated/${locale}.json`)).default;
-  const messages = convertHonyakuMessages(raw);
-
-  return { locale, messages };
+  const messages = loadLocale(locale);
+  return {
+    locale,
+    messages: {
+      ...messages,
+      ...enMessages,
+    }
+  };
 });
 ```
 
