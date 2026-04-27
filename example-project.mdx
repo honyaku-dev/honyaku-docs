@@ -78,7 +78,7 @@ export function loadMessages(messages: Record<string, { text: string }>): Record
 
 export async function loadLocale(locale: string) {
   if (locale === "en") {
-    return enMessages
+    return loadMessages(enMessages)
   } else {
     return loadMessages((await import(`../messages/${locale}.json`)).default)
   }
@@ -120,12 +120,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ? requested
     : routing.defaultLocale;
 
-  const messages = loadLocale(locale);
+  const messages = await loadLocale(locale);
   return {
     locale,
     messages: {
-      ...messages,
       ...enMessages,
+      ...messages,
     }
   };
 });
