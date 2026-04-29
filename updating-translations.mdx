@@ -1,21 +1,22 @@
 ---
-title: "Updating translations"
+title: "Setting up"
 description: "Learn how to update translations manually or automatically"
 ---
 
-## File structure
+## Creating a language file
 
-We support any i18n libraries. However, to help AI understand the context and generate better translations,
-we recommend having "description" fields in your translation files to provide more context for each translation key.
+We support any i18n libraries. However, to help AI understand the context and generate better translations, we recommend having "description" fields in your translation files to provide more context for each translation key.
 
 ### Pattern 1
 
 Schema:
+
 ```ts
 Record<string, { text: string; description: string }>
 ```
 
 Example:
+
 ```json
 {
   "save": {
@@ -30,12 +31,13 @@ Example:
 ```
 
 You can convert this format to a simpler format that your i18n library uses:
+
 ```ts
 import en from "@/i18n/en.json"
 
-const enMessages = loadLocale(en)
+const enMessages = loadMessages(en)
 
-function loadLocale(messages: Record<string, { text: string }>): Record<string, string> {
+function loadMessages(messages: Record<string, { text: string }>): Record<string, string> {
   return Object.fromEntries(Object.entries(messages).map(([key, value]) => [key, value.text]))
 }
 ```
@@ -43,11 +45,13 @@ function loadLocale(messages: Record<string, { text: string }>): Record<string, 
 ### Pattern 2
 
 Schema:
+
 ```ts
 { key: string; text: string; description: string }[]
 ```
 
 Example:
+
 ```json
 [
   {
@@ -64,12 +68,47 @@ Example:
 ```
 
 You can convert this format to a simpler format that your i18n library uses:
+
 ```ts
 import en from "@/i18n/en.json"
 
-const enMessages = loadLocale(en)
+const enMessages = loadMessages(en)
 
-function loadLocale(messages: { key: string; text: string }[]): Record<string, string> {
+function loadMessages(messages: { key: string; text: string }[]): Record<string, string> {
   return Object.fromEntries(messages.map(({ key, text }) => [key, text]))
 }
+```
+
+## Loading translations
+
+Using our integration with CI/CD, you can automatically update translations when new translation keys are added, or when messages are modified.
+
+After new translations are generated, new changes are automatically committed to your repository. And because there is some time lag until those changes are committed, it is highly recommended to prepare a fallback mechanism when loading translations.
+
+You can use a code snippet from [our example project](https://github.com/honyaku-dev/honyaku-example/blob/main/i18n/request.ts) as an example.
+
+```typescript request.ts
+import { getRequestConfig } from "next-intl/server";
+import { hasLocale } from "next-intl";
+import { routing } from "./routing";
+import { loadLocale, loadMessages } from "@/lib/honyaku";
+import en from "@/messages/en.json"
+
+const enMessages = loadMessages(en);
+
+export default getRequestConfig(async ({ requestLocale }) => {
+  const requested = await requestLocale;
+  const locale = hasLocale(routing.locales, requested)
+    ? requested
+    : routing.defaultLocale;
+
+  const messages = await loadLocale(locale);
+  return {
+    locale,
+    messages: {
+      ...enMessages,
+      ...messages,
+    }
+  };
+});
 ```
