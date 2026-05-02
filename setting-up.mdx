@@ -5,7 +5,7 @@ description: "Learn how to update translations manually or automatically"
 
 ## Creating a language file
 
-We support any i18n libraries. However, to help AI understand the context and generate better translations, we recommend having "description" fields in your translation files to provide more context for each translation key.
+We support any i18n library. However, to help AI understand the context and generate better translations, we recommend having "description" fields in your translation files to provide more context for each translation key.
 
 ### Pattern 1
 
@@ -83,9 +83,9 @@ function loadMessages(messages: { key: string; text: string }[]): Record<string,
 
 Using our integration with CI/CD, you can automatically update translations when new translation keys are added, or when messages are modified.
 
-After new translations are generated, new changes are automatically committed to your repository. And because there is some time lag until those changes are committed, it is highly recommended to prepare a fallback mechanism when loading translations.
+After new translations are generated, the changes are automatically committed to your repository. Because there is some delay before those changes are committed, it is highly recommended to prepare a fallback mechanism when loading translations.
 
-You can use a code snippet from [our example project](https://github.com/honyaku-dev/honyaku-example/blob/main/i18n/request.ts) as an example.
+You can use a code snippet from [our example project](https://github.com/honyaku-dev/honyaku-example/blob/main/i18n/request.ts).
 
 ```typescript request.ts
 import { getRequestConfig } from "next-intl/server";
@@ -117,7 +117,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
 If you use coding agents, you can use our [update-translations](https://github.com/honyaku-dev/update-translations) skill.
 
-Install the skill by simply runnning this command:
+Install the skill by simply running this command:
 
 ```
 npx skills add honyaku-dev/update-translations
@@ -125,4 +125,4 @@ npx skills add honyaku-dev/update-translations
 
 Every time a coding agent inserts a new user message, it will update the language file using this skill.
 
-Alternatively, you can manually trigger `/update-translations` and let the coding agent reads unstaged / uncommited changes and update the language file accordingly.
+Alternatively, you can manually trigger `/update-translations` and let the coding agent read unstaged / uncommitted changes and update the language file accordingly.
