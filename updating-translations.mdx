@@ -112,3 +112,17 @@ export default getRequestConfig(async ({ requestLocale }) => {
   };
 });
 ```
+
+## Updating translations
+
+If you use coding agents, you can use our [update-translations](https://github.com/honyaku-dev/update-translations) skill.
+
+Install the skill by simply runnning this command:
+
+```
+npx skills add honyaku-dev/update-translations
+```
+
+Every time a coding agent inserts a new user message, it will update the language file using this skill.
+
+Alternatively, you can manually trigger `/update-translations` and let the coding agent reads unstaged / uncommited changes and update the language file accordingly.
